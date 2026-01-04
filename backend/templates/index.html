@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS Process Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+<div class="dashboard">
+    <h1>🖥️ OS Process Monitor</h1>
+
+    <div class="cards">
+        <div class="metric">
+            <span class="label">CPU Usage</span>
+            <span class="value"><span id="cpu">--</span> %</span>
+        </div>
+
+        <div class="metric">
+            <span class="label">Memory Usage</span>
+            <span class="value"><span id="memory">--</span> MB</span>
+        </div>
+    </div>
+
+    <div id="statusBox" class="status-box NORMAL">
+        <span id="status">NORMAL</span>
+    </div>
+
+    <div class="reason" id="reason">
+        Process operating normally
+    </div>
+
+    <!-- GRAPH CARD -->
+    <div class="graph-card">
+        <h3>Usage Trend</h3>
+        <canvas id="usageChart"></canvas>
+    </div>
+
+    <div class="footer">
+        OS Lab Mini Project • Real-time Monitoring
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
