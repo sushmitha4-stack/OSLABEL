@@ -3,50 +3,136 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OS Process Monitor</title>
+    <title>OS Process Monitor Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-<div class="dashboard">
-    <h1>🖥️ OS Process Monitor</h1>
+<!-- Alarm Sound -->
+<audio id="alarmSound" preload="auto">
+    <source src="data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==" type="audio/wav">
+</audio>
+<div class="container">
+    <header class="header">
+        <div class="header-content">
+            <h1>🖥️ Process Monitor Dashboard</h1>
+            <p class="subtitle">Real-time System Performance Tracking</p>
+        </div>
+        <div class="status-indicator">
+            <div class="status-dot NORMAL" id="statusDot"></div>
+            <span id="statusText">NORMAL</span>
+        </div>
+    </header>
 
-    <div class="cards">
-        <div class="metric">
-            <span class="label">CPU Usage</span>
-            <span class="value"><span id="cpu">--</span> %</span>
+    <main class="dashboard">
+        <!-- Key Metrics Row -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon cpu-icon">📊</div>
+                <div class="metric-content">
+                    <p class="metric-label">CPU Usage</p>
+                    <p class="metric-value"><span id="cpu">--</span><span class="unit">%</span></p>
+                    <p class="metric-trend" id="cpuTrend">→</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon memory-icon">💾</div>
+                <div class="metric-content">
+                    <p class="metric-label">Memory Usage</p>
+                    <p class="metric-value"><span id="memory">--</span><span class="unit">MB</span></p>
+                    <p class="metric-trend" id="memTrend">→</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon threads-icon">⚙️</div>
+                <div class="metric-content">
+                    <p class="metric-label">Threads</p>
+                    <p class="metric-value"><span id="threads">--</span></p>
+                    <p class="metric-trend">Running</p>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon process-icon">🔧</div>
+                <div class="metric-content">
+                    <p class="metric-label">Process Info</p>
+                    <p class="metric-value"><span id="processName">--</span></p>
+                    <p class="metric-trend">PID: <span id="pid">-</span></p>
+                </div>
+            </div>
         </div>
 
-        <div class="metric">
-            <span class="label">Memory Usage</span>
-            <span class="value"><span id="memory">--</span> MB</span>
+        <!-- Status Box -->
+        <div class="status-section">
+            <div id="statusBox" class="status-box NORMAL">
+                <span class="status-title">System Status</span>
+                <span id="status" class="status-value">NORMAL</span>
+            </div>
+            <p id="reason" class="status-reason">Process operating normally</p>
+            <p id="timestamp" class="timestamp">Last updated: --:--:--</p>
         </div>
-    </div>
 
-    <div id="statusBox" class="status-box NORMAL">
-        <span id="status">NORMAL</span>
-    </div>
+        <!-- Main Graph -->
+        <div class="chart-container">
+            <h3 class="chart-title">Usage Trend (Last 20 minutes)</h3>
+            <div class="chart-wrapper">
+                <canvas id="usageChart"></canvas>
+            </div>
+        </div>
 
-    <div class="reason" id="reason">
-        Process operating normally
-    </div>
+        <!-- Additional Stats -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-label">Baseline CPU</span>
+                <span class="stat-value" id="baselineCPU">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Current/Baseline</span>
+                <span class="stat-value" id="cpuRatio">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Latest Update</span>
+                <span class="stat-value" id="updateTime">--:--:--</span>
+            </div>
+        </div>
+    </main>
 
-    <!-- GRAPH CARD -->
-    <div class="graph-card">
-        <h3>Usage Trend</h3>
-        <canvas id="usageChart"></canvas>
-    </div>
+    <footer class="footer">
+        <p>OS Lab Mini Project • Real-time Process Monitoring System</p>
+        <p style="font-size: 12px; margin-top: 8px;">Updates every 2 seconds</p>
+    </footer>
+</div>
 
-    <div class="footer">
-        OS Lab Mini Project • Real-time Monitoring
+<!-- Anomaly Alert Modal -->
+<div id="anomalyModal" class="modal">
+    <div class="modal-content anomaly-alert">
+        <div class="modal-header alert-header">
+            <span class="alert-icon">⚠️</span>
+            <h2>ANOMALY DETECTED</h2>
+        </div>
+        <div class="modal-body alert-body">
+            <p class="anomaly-message" id="anomalyMessage">High resource usage detected!</p>
+            <div class="anomaly-details">
+                <p><strong>Issue:</strong> <span id="anomalyReason">--</span></p>
+                <p><strong>Process:</strong> <span id="anomalyProcess">--</span> (PID: <span id="anomalyPID">--</span>)</p>
+                <p><strong>Current Usage:</strong> CPU: <span id="anomalyCPU">--</span>% | Memory: <span id="anomalyMemory">--</span>MB</p>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                ✅ <strong>Your Dashboard is Safe!</strong> Only the problematic tab will be closed.<br>
+                💡 If anomaly continues after closing, click again to close the next heavy tab.
+            </div>
+        </div>
+        <div class="modal-footer alert-footer">
+            <button id="closeTaskBtn" class="btn-danger">🔴 Close Task</button>
+            <button id="dismissBtn" class="btn-secondary">⏭️ Dismiss & Continue</button>
+        </div>
     </div>
 </div>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
-
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
