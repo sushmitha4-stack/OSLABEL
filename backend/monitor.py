@@ -57,7 +57,10 @@ def get_all_chrome_processes():
     return chrome_procs
 
 def get_visible_tab_count():
-    """Count only VISIBLE TABS (filters out background processes like GPU, utility, etc)"""
+    """Count only VISIBLE TABS (filters out background processes like GPU, utility, etc)
+    More aggressive filtering: Skip top 5-7 processes which are usually background services,
+    and only count processes >50MB as actual tabs.
+    """
     procs = get_all_chrome_processes()
     
     if not procs:
@@ -75,14 +78,30 @@ def get_visible_tab_count():
     # Sort by memory descending
     memory_data.sort(key=lambda x: x[1], reverse=True)
     
-    # FILTER OUT BACKGROUND PROCESSES:
-    # Top 3-4 largest are usually: Main Browser, GPU Process, Utility Worker, Service Manager
-    # Remove the largest ones (these are NOT tabs)
-    filtered_processes = [p for p, mem in memory_data[3:]]  # Skip top 3 (background noise)
+    print(f"\n[TAB COUNT ANALYSIS] Total Chrome processes: {len(memory_data)}")
+    print(f"[PROCESS LIST] Memory breakdown:")
+    for i, (p, mem) in enumerate(memory_data):
+        proc_type = "BACKGROUND" if i < 5 else "POSSIBLE TAB"
+        print(f"  {i+1}. {proc_type}: {mem:.1f}MB")
     
-    visible_tab_count = max(0, len(filtered_processes))
+    # AGGRESSIVE FILTERING: Skip top 5-7 processes
+    # These are typically: Main Browser, GPU, Utility-1, Utility-2, Service Worker, Extension, etc.
+    num_background = min(7, len(memory_data) // 2)  # Skip up to 7, or half the total processes
     
-    print(f"[TAB COUNT DEBUG] Total processes: {len(procs)}, Background: 3, Visible tabs: {visible_tab_count}")
+    # Only count processes >50MB as actual tabs (filters out small utility processes)
+    visible_tabs = []
+    for p, mem in memory_data[num_background:]:
+        if mem > 50:  # Min 50MB for a real tab
+            visible_tabs.append((p, mem))
+    
+    visible_tab_count = len(visible_tabs)
+    
+    print(f"[FILTERING] Skipped top {num_background} background processes")
+    print(f"[RESULT] Visible tabs (>50MB after filtering): {visible_tab_count}")
+    if visible_tabs:
+        for p, mem in visible_tabs:
+            print(f"  - TAB: {mem:.1f}MB")
+    print()
     
     return visible_tab_count
 
@@ -196,6 +215,7 @@ def get_timestamp():
 def find_heaviest_child_process(parent_process):
     """Find the heaviest VISIBLE TAB (filters background processes like GPU, utility, etc)
     EXCLUDES: localhost dashboard tabs and Flask app processes
+    Uses aggressive filtering to identify actual tabs vs background services.
     """
     procs = get_all_chrome_processes()
     
@@ -222,17 +242,19 @@ def find_heaviest_child_process(parent_process):
     print(f"[TAB ANALYSIS] Found {len(memory_data)} Chrome processes (excluding localhost):")
     for i, (p, mem) in enumerate(memory_data):
         try:
-            label = "(BACKGROUND)" if i < 3 else "(VISIBLE TAB)"
+            label = "(BACKGROUND)" if i < 5 else "(VISIBLE TAB)" if mem > 50 else "(SMALL UTIL)"
             print(f"  Process {i+1}: PID={p.pid}, Memory={mem:.2f}MB {label}")
         except:
             pass
     
-    # EXCLUDE TOP 3 (background processes: browser, GPU, utility)
+    # EXCLUDE TOP 5-7 (background processes: browser, GPU, utilities, service workers)
     # Find heaviest VISIBLE TAB (after skipping background processes)
+    num_background = min(7, len(memory_data) // 2)
+    
     heaviest = None
     max_mem = 0
     
-    for p, mem in memory_data[3:]:  # Skip top 3
+    for p, mem in memory_data[num_background:]:  # Skip top N
         if mem > 50:  # Tab must be at least 50MB (actual tab, not tiny process)
             heaviest = p
             max_mem = mem
