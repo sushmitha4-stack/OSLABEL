@@ -56,54 +56,89 @@ def get_all_chrome_processes():
         print(f"[ERROR] Getting Chrome processes: {e}")
     return chrome_procs
 
-def get_visible_tab_count():
-    """Count only VISIBLE TABS (filters out background processes like GPU, utility, etc)
-    More aggressive filtering: Skip top 5-7 processes which are usually background services,
-    and only count processes >50MB as actual tabs.
+def is_chrome_tab_process(p):
+    """Identify if a Chrome process is an actual BROWSER TAB (renderer process)
+    NOT background services like GPU, utility workers, service workers, etc.
+    
+    Returns True only for processes that are actual browser tabs visible in taskbar.
+    """
+    try:
+        # Get command line arguments to check process type
+        cmdline = p.cmdline()
+        cmdline_str = ' '.join(cmdline).lower()
+        
+        # Background process types - EXCLUDE these
+        background_types = [
+            '--type=gpu',
+            '--type=utility', 
+            '--type=plugin',
+            '--type=service_worker',
+            '--type=network',
+            '--type=storage',
+            '--type=zygote',
+            '--type=ppapi',
+            '--type=extension',
+        ]
+        
+        # Check if it's a background process type
+        for bg_type in background_types:
+            if bg_type in cmdline_str:
+                return False
+        
+        # If it's explicitly a renderer, it's a tab
+        if '--type=renderer' in cmdline_str:
+            return True
+        
+        # If no --type specified, it's likely the main browser process, not a tab
+        if '--type=' not in cmdline_str:
+            # Main browser process has no type
+            return False
+        
+        # Any other type is also background
+        return False
+    
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return False
+    except Exception as e:
+        return False
+
+def get_actual_browser_tabs():
+    """Get ONLY actual browser tabs (renderer processes visible in taskbar)
+    Excludes ALL background processes, utilities, workers, extensions, GPU, etc.
     """
     procs = get_all_chrome_processes()
     
     if not procs:
-        return 0
+        return []
     
-    # Get memory for each process
-    memory_data = []
+    actual_tabs = []
     for p in procs:
         try:
+            if is_chrome_tab_process(p):
+                actual_tabs.append(p)
+        except:
+            pass
+    
+    return actual_tabs
+
+def get_visible_tab_count():
+    """Count only ACTUAL BROWSER TABS (renderer processes)
+    No dummy values, no background processes - ONLY tabs visible in taskbar.
+    """
+    actual_tabs = get_actual_browser_tabs()
+    
+    tab_count = len(actual_tabs)
+    
+    print(f"\n[ACTUAL TABS ONLY] Found {tab_count} real browser tabs (renderer processes)")
+    for i, p in enumerate(actual_tabs, 1):
+        try:
             mem = p.memory_info().rss / (1024 * 1024)
-            memory_data.append((p, mem))
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            continue
-    
-    # Sort by memory descending
-    memory_data.sort(key=lambda x: x[1], reverse=True)
-    
-    print(f"\n[TAB COUNT ANALYSIS] Total Chrome processes: {len(memory_data)}")
-    print(f"[PROCESS LIST] Memory breakdown:")
-    for i, (p, mem) in enumerate(memory_data):
-        proc_type = "BACKGROUND" if i < 5 else "POSSIBLE TAB"
-        print(f"  {i+1}. {proc_type}: {mem:.1f}MB")
-    
-    # AGGRESSIVE FILTERING: Skip top 5-7 processes
-    # These are typically: Main Browser, GPU, Utility-1, Utility-2, Service Worker, Extension, etc.
-    num_background = min(7, len(memory_data) // 2)  # Skip up to 7, or half the total processes
-    
-    # Only count processes >50MB as actual tabs (filters out small utility processes)
-    visible_tabs = []
-    for p, mem in memory_data[num_background:]:
-        if mem > 50:  # Min 50MB for a real tab
-            visible_tabs.append((p, mem))
-    
-    visible_tab_count = len(visible_tabs)
-    
-    print(f"[FILTERING] Skipped top {num_background} background processes")
-    print(f"[RESULT] Visible tabs (>50MB after filtering): {visible_tab_count}")
-    if visible_tabs:
-        for p, mem in visible_tabs:
-            print(f"  - TAB: {mem:.1f}MB")
+            print(f"  {i}. Tab: PID={p.pid}, Memory={mem:.1f}MB")
+        except:
+            pass
     print()
     
-    return visible_tab_count
+    return tab_count
 
 def get_total_chrome_metrics():
     """Get TOTAL CPU and memory for ALL Chrome processes"""
@@ -213,59 +248,56 @@ def get_timestamp():
     return datetime.now().strftime("%H:%M:%S")
 
 def find_heaviest_child_process(parent_process):
-    """Find the heaviest VISIBLE TAB (filters background processes like GPU, utility, etc)
-    EXCLUDES: localhost dashboard tabs and Flask app processes
-    Uses aggressive filtering to identify actual tabs vs background services.
+    """Find the HEAVIEST BROWSER TAB to close
+    ONLY terminates actual browser tabs (renderer processes visible in taskbar)
+    EXCLUDES: localhost, background processes, utilities, workers, extensions, GPU, etc.
     """
-    procs = get_all_chrome_processes()
+    print("\n[TAB CLOSURE] Looking for heaviest browser tab to close...")
     
-    if not procs:
+    actual_tabs = get_actual_browser_tabs()
+    
+    if not actual_tabs:
+        print("[NO TABS FOUND] No actual browser tabs available to close")
+        print("[PROTECTED] All processes are background services or localhost\n")
         return None
     
-    # Get memory for each process
-    memory_data = []
-    for p in procs:
+    # Get memory for each actual tab
+    tab_memory = []
+    for p in actual_tabs:
         try:
-            # Skip protected processes (Flask app, localhost tabs)
             if is_protected_process(p):
-                print(f"[PROTECTED] Skipping PID={p.pid} (Flask/localhost protected)")
+                print(f"[PROTECTED] Skipping tab PID={p.pid} (localhost protected)")
                 continue
             
             mem = p.memory_info().rss / (1024 * 1024)
-            memory_data.append((p, mem))
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            continue
-    
-    # Sort by memory descending
-    memory_data.sort(key=lambda x: x[1], reverse=True)
-    
-    print(f"[TAB ANALYSIS] Found {len(memory_data)} Chrome processes (excluding localhost):")
-    for i, (p, mem) in enumerate(memory_data):
-        try:
-            label = "(BACKGROUND)" if i < 5 else "(VISIBLE TAB)" if mem > 50 else "(SMALL UTIL)"
-            print(f"  Process {i+1}: PID={p.pid}, Memory={mem:.2f}MB {label}")
+            tab_memory.append((p, mem))
         except:
             pass
     
-    # EXCLUDE TOP 5-7 (background processes: browser, GPU, utilities, service workers)
-    # Find heaviest VISIBLE TAB (after skipping background processes)
-    num_background = min(7, len(memory_data) // 2)
+    if not tab_memory:
+        print("[NO CLOSEABLE TABS] All tabs are protected\n")
+        return None
     
-    heaviest = None
-    max_mem = 0
+    # Sort by memory (find heaviest tab)
+    tab_memory.sort(key=lambda x: x[1], reverse=True)
     
-    for p, mem in memory_data[num_background:]:  # Skip top N
-        if mem > 50:  # Tab must be at least 50MB (actual tab, not tiny process)
-            heaviest = p
-            max_mem = mem
-            break
-    
-    if heaviest:
+    print(f"[ACTUAL TABS] Found {len(tab_memory)} real browser tabs:")
+    for i, (p, mem) in enumerate(tab_memory, 1):
         try:
-            print(f"[TARGET IDENTIFIED] Will close VISIBLE TAB: PID={heaviest.pid}, Memory={max_mem:.2f}MB")
+            label = "← WILL CLOSE" if i == 1 else ""
+            print(f"  {i}. {mem:.1f}MB {label}")
         except:
             pass
-    else:
-        print(f"[NO VISIBLE TAB FOUND] Only background processes detected or localhost protected")
     
-    return heaviest if heaviest and max_mem > 50 else None
+    # Return the heaviest tab
+    if tab_memory:
+        heaviest_p, heaviest_mem = tab_memory[0]
+        try:
+            print(f"[TARGET] Closing heaviest tab: PID={heaviest_p.pid}, Memory={heaviest_mem:.1f}MB")
+        except:
+            pass
+        print()
+        return heaviest_p
+    
+    print()
+    return None
