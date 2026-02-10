@@ -3,9 +3,10 @@ import psutil
 import os
 import signal
 import time
+import subprocess
 from monitor import (
     find_process, learn_baseline, get_process_data, 
-    get_timestamp, find_heaviest_child_process
+    get_timestamp, find_heaviest_child_process, is_protected_process
 )
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -169,6 +170,12 @@ def kill_process():
         if not target:
             print("[ERROR] No suitable tab process found to close")
             return jsonify({"success": False, "message": "No tab process found"}), 404
+        
+        # SAFETY CHECK: Don't kill protected processes (Flask app, localhost)
+        if is_protected_process(target):
+            print("[BLOCKED] Target is a protected process (Flask/localhost)")
+            print(f"[BLOCKED] Cannot close PID {target.pid} - dashboard protection active")
+            return jsonify({"success": False, "message": "Cannot close localhost/Flask processes"}), 403
         
         try:
             target_name = target.name()
