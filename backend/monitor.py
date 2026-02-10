@@ -57,45 +57,47 @@ def get_all_chrome_processes():
     return chrome_procs
 
 def is_chrome_tab_process(p):
-    """Identify if a Chrome process is an actual BROWSER TAB (renderer process)
-    NOT background services like GPU, utility workers, service workers, etc.
+    """Identify if a Chrome process is an actual VISIBLE BROWSER TAB
+    Returns True ONLY for renderer processes that are actual user-visible tabs.
     
-    Returns True only for processes that are actual browser tabs visible in taskbar.
+    Filters:
+    - Must be a renderer process (--type=renderer)
+    - Must have significant memory (>30MB indicates real tab with content)
+    - Not a background service, extension, or utility process
     """
     try:
         # Get command line arguments to check process type
         cmdline = p.cmdline()
         cmdline_str = ' '.join(cmdline).lower()
         
-        # Background process types - EXCLUDE these
+        # Must be a renderer process
+        if '--type=renderer' not in cmdline_str:
+            return False
+        
+        # Background process types that we must explicitly exclude even if they're renderers
         background_types = [
-            '--type=gpu',
-            '--type=utility', 
-            '--type=plugin',
-            '--type=service_worker',
-            '--type=network',
-            '--type=storage',
-            '--type=zygote',
-            '--type=ppapi',
-            '--type=extension',
+            '--type=extension',  # Extension background pages
+            '--type=service_worker',  # Service workers (might have --type=renderer too)
+            '--type=utility',  # Utility processes
+            '--type=plugin',  # Plugins
         ]
         
-        # Check if it's a background process type
         for bg_type in background_types:
             if bg_type in cmdline_str:
                 return False
         
-        # If it's explicitly a renderer, it's a tab
-        if '--type=renderer' in cmdline_str:
-            return True
+        # Get memory to filter out tiny background renderers
+        try:
+            mem = p.memory_info().rss / (1024 * 1024)
+            # Real tabs typically have >30MB memory (content + DOM)
+            # Tiny renderers (<30MB) are usually PDFs, forms, iframes, etc.
+            if mem < 30:
+                return False
+        except:
+            pass
         
-        # If no --type specified, it's likely the main browser process, not a tab
-        if '--type=' not in cmdline_str:
-            # Main browser process has no type
-            return False
-        
-        # Any other type is also background
-        return False
+        # All checks passed - this is a real visible tab
+        return True
     
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         return False
@@ -194,36 +196,51 @@ def learn_baseline(process):
         return 5.0, 300.0
 
 def get_process_data(process, avg_cpu, avg_mem):
-    """Get current process data and detect anomalies (from ALL Chrome processes)"""
+    """Get current process data and detect anomalies (from ALL Chrome processes)
+    IMPORTANT: Only trigger anomaly if there are actually visible tabs open!
+    """
     try:
         # Get TOTAL metrics for all Chrome processes
         cpu, mem = get_total_chrome_metrics()
         
-        # Count VISIBLE TABS ONLY (filters background processes)
+        # Count VISIBLE TABS ONLY (actual browser tabs in taskbar)
         visible_tab_count = get_visible_tab_count()
-
-        # Simple thresholds
-        cpu_anomaly = cpu > ABSOLUTE_CPU_THRESHOLD
-        mem_anomaly = mem > ABSOLUTE_MEM_THRESHOLD
-        # YouTube tab anomaly: 3+ VISIBLE tabs (not background processes)
-        youtube_anomaly = visible_tab_count >= YOUTUBE_ANOMALY_PROCESS_COUNT
 
         status = "NORMAL"
         reason = "Process operating normally"
+        
+        # RULE 1: If NO visible tabs, never trigger anomaly (nothing to close anyway)
+        if visible_tab_count == 0:
+            print(f"[NO ANOMALY] 0 visible tabs detected - ignoring CPU/Memory readings")
+            reason = "No visible tabs detected (Chrome idle or background only)"
+            return {
+                "cpu": round(cpu, 2),
+                "memory": round(mem, 2),
+                "status": status,
+                "reason": reason,
+                "process_count": visible_tab_count,
+                "note": "0 visible tabs = no anomaly possible"
+            }
+        
+        # RULE 2: If visible tabs exist, check for resource anomalies
+        cpu_anomaly = cpu > ABSOLUTE_CPU_THRESHOLD
+        mem_anomaly = mem > ABSOLUTE_MEM_THRESHOLD
+        youtube_anomaly = visible_tab_count >= YOUTUBE_ANOMALY_PROCESS_COUNT
 
-        if (cpu_anomaly or mem_anomaly) or (youtube_anomaly and cpu > 20):  # YouTube tab detected
+        # Only trigger if there are ACTUAL visible tabs AND high resources
+        if (cpu_anomaly or mem_anomaly) or (youtube_anomaly and cpu > 20):
             status = "ANOMALY"
             if cpu_anomaly and mem_anomaly:
-                reason = f"HIGH CPU & MEMORY: CPU {cpu:.1f}% + Memory {mem:.1f}MB (Visible tabs: {visible_tab_count})"
+                reason = f"HIGH CPU & MEMORY: CPU {cpu:.1f}% + Memory {mem:.1f}MB with {visible_tab_count} visible tabs"
             elif cpu_anomaly:
-                reason = f"HIGH CPU: {cpu:.1f}% (threshold: {ABSOLUTE_CPU_THRESHOLD}%) - {visible_tab_count} visible tabs"
+                reason = f"HIGH CPU: {cpu:.1f}% (threshold: {ABSOLUTE_CPU_THRESHOLD}%) with {visible_tab_count} visible tabs"
             elif mem_anomaly:
-                reason = f"HIGH MEMORY: {mem:.1f}MB (threshold: {ABSOLUTE_MEM_THRESHOLD}MB) - {visible_tab_count} visible tabs"
+                reason = f"HIGH MEMORY: {mem:.1f}MB (threshold: {ABSOLUTE_MEM_THRESHOLD}MB) with {visible_tab_count} visible tabs"
             elif youtube_anomaly:
                 reason = f"HIGH TAB COUNT: {visible_tab_count} VISIBLE tabs detected (3+ tab anomaly) - Recommended: Close most recent YouTube tab"
             
             print(f"[ANOMALY DETECTED] {reason}")
-            print(f"[VISIBLE TAB COUNT] {visible_tab_count} actual tabs detected (background processes excluded)")
+            print(f"[VISIBLE TAB COUNT] {visible_tab_count} actual tabs detected")
         
         return {
             "cpu": round(cpu, 2),
