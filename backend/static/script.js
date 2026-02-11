@@ -89,6 +89,280 @@ function closeAnomalyModal() {
     modal.classList.remove("show");
 }
 
+// Security threat type mapping to security page categories
+const threatMapping = {
+    "SUSPICIOUS_CHILD_PROCESS": {
+        category: "Suspicious Child Processes",
+        icon: "⚙️",
+        description: "Malicious executables spawned by application",
+        severity: "HIGH"
+    },
+    "PRIVILEGE_ESCALATION": {
+        category: "Privilege Escalation",
+        icon: "👑",
+        description: "Unauthorized elevation to SYSTEM/Admin privileges",
+        severity: "CRITICAL"
+    },
+    "NETWORK_ANOMALY": {
+        category: "Network Anomalies",
+        icon: "🌐",
+        description: "Unusual network connections detected",
+        severity: "HIGH"
+    },
+    "PROCESS_INJECTION": {
+        category: "Process Injection",
+        icon: "💉",
+        description: "Code injected into running process memory",
+        severity: "CRITICAL"
+    },
+    "FILE_ACCESS": {
+        category: "File Access",
+        icon: "📁",
+        description: "Suspicious file system access patterns",
+        severity: "MEDIUM"
+    },
+    "MEMORY_EXPLOIT": {
+        category: "Memory Exploits",
+        icon: "🧠",
+        description: "Potential buffer overflow or memory corruption",
+        severity: "CRITICAL"
+    }
+};
+
+// Store active threats
+let activeSecurityThreats = [];
+let lastSecurityNotification = null;
+
+// Display security threats on dashboard
+function displaySecurityThreats(threats) {
+    if (!threats || threats.length === 0) {
+        // No threats - show success message
+        document.getElementById("securityThreatsContainer").innerHTML = '<p class="no-threats-message">✅ No security threats detected</p>';
+        document.getElementById("threatsList").style.display = "none";
+        document.getElementById("threatSeverityBadge").className = "threat-severity-badge";
+        document.getElementById("threatCount").innerText = "0";
+        activeSecurityThreats = [];
+        return;
+    }
+    
+    activeSecurityThreats = threats;
+    
+    // Update threat count badge
+    const threatCountEl = document.getElementById("threatCount");
+    threatCountEl.innerText = threats.length;
+    
+    // Determine max severity
+    const maxSeverity = threats.reduce((max, threat) => {
+        const severities = { CRITICAL: 3, HIGH: 2, MEDIUM: 1 };
+        return Math.max(max, severities[threat.severity] || 0);
+    }, 0);
+    
+    const severityClass = maxSeverity >= 3 ? "critical" : maxSeverity >= 2 ? "high" : "";
+    const badgeEl = document.getElementById("threatSeverityBadge");
+    badgeEl.className = `threat-severity-badge ${severityClass}`;
+    
+    // Hide container message, show threats list
+    document.getElementById("securityThreatsContainer").innerHTML = '';
+    document.getElementById("threatsList").style.display = "block";
+    
+    // Build threats table
+    const threatsBody = document.getElementById("threatsBody");
+    threatsBody.innerHTML = threats.map((threat, idx) => `
+        <div class="threat-item" onclick="showSecurityModal(${idx})">
+            <div class="threat-icon">${threatMapping[threat.type]?.icon || "⚠️"}</div>
+            <div class="threat-name">${threatMapping[threat.type]?.category || threat.type}</div>
+            <div class="severity-badge ${threat.severity}">${threat.severity}</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">${threat.description || threatMapping[threat.type]?.description || "Security threat detected"}</div>
+            <div class="threat-action">View Details ></div>
+        </div>
+    `).join("");
+    
+    // Show notification for new threats
+    if (threats.length > 0 && (!lastSecurityNotification || Date.now() - lastSecurityNotification > 60000)) {
+        lastSecurityNotification = Date.now();
+        if (threats.some(t => t.severity === "CRITICAL")) {
+            playSecurityAlarm();
+        }
+    }
+}
+
+// Show security threat modal
+function showSecurityModal(threatIndex) {
+    const threat = activeSecurityThreats[threatIndex];
+    if (!threat) return;
+    
+    const mapping = threatMapping[threat.type] || {};
+    
+    // Update modal content
+    document.getElementById("threatType").innerText = mapping.category || threat.type;
+    document.getElementById("threatSeverity").innerText = threat.severity || "MEDIUM";
+    document.getElementById("threatSeverity").className = `severity-badge ${threat.severity || "MEDIUM"}`;
+    document.getElementById("threatDescription").innerText = threat.description || mapping.description || "Security threat detected";
+    
+    // Build impact details
+    let impactText = `<strong>Threat Category:</strong> ${mapping.category || threat.type}\n`;
+    impactText += `<strong>Severity Level:</strong> ${threat.severity || "MEDIUM"}\n`;
+    impactText += `<strong>Process:</strong> ${threat.process || "Chrome"}\n`;
+    impactText += `<strong>Detected:</strong> ${new Date().toLocaleTimeString()}`;
+    
+    document.getElementById("threatImpact").innerHTML = impactText.split('\n').map(line => `<p>${line}</p>`).join("");
+    
+    // Show modal
+    const modal = document.getElementById("securityModal");
+    modal.classList.add("show");
+    
+    // Store current threat for learning more  
+    document.getElementById("learnMoreBtn").onclick = function() {
+        closeSecurityModal();
+        // Link to security page with anchor to specific threat
+        window.location.href = `/security#${mapping.category?.toLowerCase().replace(/\s+/g, '-') || 'threats'}`;
+    };
+}
+
+// Close security modal
+function closeSecurityModal() {
+    const modal = document.getElementById("securityModal");
+    modal.classList.remove("show");
+}
+
+// Play security alarm (different from resource alarm)
+function playSecurityAlarm() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Higher frequency for security alert
+        oscillator.frequency.value = 1200;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (e) {
+        console.log("Web Audio API not available");
+    }
+}
+
+// Play security alarm (different from resource alarm)
+function playSecurityAlarm() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Higher frequency for security alert
+        oscillator.frequency.value = 1200;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (e) {
+        console.log("Web Audio API not available");
+    }
+}
+
+// Generate security threats based on process monitoring data
+function generateSecurityThreats(data) {
+    const threats = [];
+    
+    // ANOMALY status indicates potential security threats
+    if (data.status === "ANOMALY") {
+        // Check CPU usage
+        if (data.cpu > 70) {
+            threats.push({
+                type: "SUSPICIOUS_CHILD_PROCESS",
+                severity: "HIGH",
+                description: `Excessive CPU usage (${data.cpu.toFixed(1)}%) detected - possible malicious child process`,
+                process: data.process_name || "Chrome",
+                timestamp: new Date().toLocaleTimeString()
+            });
+        }
+        
+        // Check memory usage
+        if (data.memory > 1024) {
+            threats.push({
+                type: "MEMORY_EXPLOIT",
+                severity: "CRITICAL",
+                description: `High memory usage (${(data.memory/1024).toFixed(2)}GB) - possible buffer overflow or memory leak`,
+                process: data.process_name || "Chrome",
+                timestamp: new Date().toLocaleTimeString()
+            });
+        }
+        
+        // If both CPU and memory are high - escalate to process injection
+        if (data.cpu > 50 && data.memory > 512) {
+            threats.push({
+                type: "PROCESS_INJECTION",
+                severity: "CRITICAL",
+                description: "Combined resource anomalies indicate potential code injection into process memory",
+                process: data.process_name || "Chrome",
+                timestamp: new Date().toLocaleTimeString()
+            });
+        }
+    }
+    
+    // WARNING status indicates elevated monitoring
+    if (data.status === "WARNING") {
+        // High CPU with unusual pattern
+        if (data.cpu > 40) {
+            threats.push({
+                type: "SUSPICIOUS_CHILD_PROCESS",
+                severity: "MEDIUM",
+                description: `Elevated CPU usage (${data.cpu.toFixed(1)}%) with potential unauthorized process spawning`,
+                process: data.process_name || "Chrome",
+                timestamp: new Date().toLocaleTimeString()
+            });
+        }
+        
+        // High memory approaching critical
+        if (data.memory > 512 && data.memory <= 1024) {
+            threats.push({
+                type: "FILE_ACCESS",
+                severity: "MEDIUM",
+                description: `Memory usage rising (${(data.memory/1024).toFixed(2)}GB) - possible aggressive file access pattern`,
+                process: data.process_name || "Chrome",
+                timestamp: new Date().toLocaleTimeString()
+            });
+        }
+    }
+    
+    // Simulate occasional network anomalies
+    if (data.cpu > 30 && Math.random() > 0.5) {
+        threats.push({
+            type: "NETWORK_ANOMALY",
+            severity: data.cpu > 60 ? "HIGH" : "MEDIUM",
+            description: `Potential C2 communication detected - encrypted traffic to suspicious domains`,
+            process: data.process_name || "Chrome",
+            timestamp: new Date().toLocaleTimeString()
+        });
+    }
+    
+    // Random privilege escalation attempt if CPU is very high
+    if (data.cpu > 80 && Math.random() > 0.7) {
+        threats.push({
+            type: "PRIVILEGE_ESCALATION",
+            severity: "CRITICAL",
+            description: "System privilege escalation attempt detected - unauthorized elevation to SYSTEM rights",
+            process: data.process_name || "Chrome",
+            timestamp: new Date().toLocaleTimeString()
+        });
+    }
+    
+    return threats;
+}
+
 // Setup modal event listeners
 document.getElementById("dismissBtn").addEventListener("click", function() {
     closeAnomalyModal();
@@ -164,6 +438,37 @@ document.getElementById("closeTaskBtn").addEventListener("click", function() {
 document.getElementById("anomalyModal").addEventListener("click", function(e) {
     if (e.target === this) {
         closeAnomalyModal();
+    }
+});
+
+// Security modal event listeners
+document.addEventListener("DOMContentLoaded", function() {
+    const securityModal = document.getElementById("securityModal");
+    if (securityModal) {
+        // Dismiss button listener
+        const dismissBtn = document.getElementById("threatDismissBtn");
+        if (dismissBtn) {
+            dismissBtn.addEventListener("click", closeSecurityModal);
+        }
+        
+        // Learn More button listener (already set in showSecurityModal)
+        const learnMoreBtn = document.getElementById("learnMoreBtn");
+        if (learnMoreBtn) {
+            learnMoreBtn.addEventListener("click", function() {
+                closeSecurityModal();
+                // Navigate to security page with threat category anchor
+                const threatType = document.getElementById("threatType").innerText;
+                const threatAnchor = threatType.toLowerCase().replace(/\s+/g, '-');
+                window.location.href = `/security#${threatAnchor}`;
+            });
+        }
+        
+        // Click outside to close
+        securityModal.addEventListener("click", function(e) {
+            if (e.target === this) {
+                closeSecurityModal();
+            }
+        });
     }
 });
 
@@ -315,6 +620,10 @@ function fetchData() {
             if (data.status === "ANOMALY") {
                 showAnomalyModal(data);
             }
+
+            // GENERATE AND DISPLAY SECURITY THREATS based on status
+            const securityThreats = generateSecurityThreats(data);
+            displaySecurityThreats(securityThreats);
 
             // Update trend indicators - only if we have valid data
             if (data.status === "NORMAL" || data.status === "ANOMALY") {

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Anomalies & Actions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='security_style.css') }}">
+</head>
+
+<body>
+<div class="container">
+    <!-- Header -->
+    <header class="security-header">
+        
+        <div class="header-content">
+            <h1>🛡️ Security Monitoring & Response</h1>
+            <p class="subtitle">Detect & Remediate Security Threats in Real-time</p>
+        </div>
+        <a href="/" class="btn-back">← Back to Dashboard</a>
+    </header>
+
+    <main class="security-main">
+        <!-- Security Categories Grid -->
+        <div class="categories-section">
+            <h2 class="section-title">Security Threat Categories</h2>
+            <div class="categories-grid">
+                <!-- Category 1: Suspicious Child Processes -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <span class="category-icon">⚙️</span>
+                        <h3>Suspicious Child Processes</h3>
+                        <span class="threat-level high">HIGH RISK</span>
+                    </div>
+                    <div class="category-content">
+                        <p class="description">Malicious executables spawned by Chrome or other applications</p>
+                        <div class="indicators">
+                            <p class="label">Indicators:</p>
+                            <ul>
+                                <li>cmd.exe, powershell.exe spawned from browser</li>
+                                <li>rundll32.exe, wscript.exe execution</li>
+                                <li>Unusual process creation chains</li>
+                                <li>Hidden or obfuscated process names</li>
+                            </ul>
+                        </div>
+                        <div class="actions">
+                            <p class="label">Recommended Actions:</p>
+                            <div class="action-item">
+                                <span class="action-icon">🔍</span>
+                                <div class="action-content">
+                                    <p class="action-title">Analyze Process</p>
+                                    <p class="action-desc">Examine the process tree in Task Manager to identify suspicious parent-child relationships</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🛑</span>
+                                <div class="action-content">
+                                    <p class="action-title">Terminate Process</p>
+                                    <p class="action-desc">Kill the suspicious child process immediately using Task Manager or command line</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🧹</span>
+                                <div class="action-content">
+                                    <p class="action-title">Deep Scan</p>
+                                    <p class="action-desc">Run full antivirus scan on the system to detect malware</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🚫</span>
+                                <div class="action-content">
+                                    <p class="action-title">Block Application</p>
+                                    <p class="action-desc">Add the parent application to firewall block list</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 2: Privilege Escalation -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <span class="category-icon">👑</span>
+                        <h3>Privilege Escalation</h3>
+                        <span class="threat-level critical">CRITICAL</span>
+                    </div>
+                    <div class="category-content">
+                        <p class="description">Unauthorized elevation of process privileges to SYSTEM or Administrator</p>
+                        <div class="indicators">
+                            <p class="label">Indicators:</p>
+                            <ul>
+                                <li>Process running as SYSTEM when shouldn't be</li>
+                                <li>UAC bypass attempts</li>
+                                <li>Token impersonation patterns</li>
+                                <li>Admin privilege escalation without authorization</li>
+                            </ul>
+                        </div>
+                        <div class="actions">
+                            <p class="label">Recommended Actions:</p>
+                            <div class="action-item">
+                                <span class="action-icon">🔐</span>
+                                <div class="action-content">
+                                    <p class="action-title">Isolate System</p>
+                                    <p class="action-desc">Disconnect from network immediately to prevent lateral movement</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">📋</span>
+                                <div class="action-content">
+                                    <p class="action-title">Review Event Logs</p>
+                                    <p class="action-desc">Check Windows Security Event Viewer for unauthorized privilege changes</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🔄</span>
+                                <div class="action-content">
+                                    <p class="action-title">System Restart</p>
+                                    <p class="action-desc">Reboot system in Safe Mode to prevent malware execution</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">💾</span>
+                                <div class="action-content">
+                                    <p class="action-title">Backup & Recover</p>
+                                    <p class="action-desc">Restore from clean backup or clean system reinstall</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 3: Network Anomalies -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <span class="category-icon">🌐</span>
+                        <h3>Network Anomalies</h3>
+                        <span class="threat-level high">HIGH RISK</span>
+                    </div>
+                    <div class="category-content">
+                        <p class="description">Unusual network connections to suspicious ports and IPs</p>
+                        <div class="indicators">
+                            <p class="label">Indicators:</p>
+                            <ul>
+                                <li>Connections to RDP (3389), SMB (445) ports</li>
+                                <li>SSH (22), FTP (21) connections from browser</li>
+                                <li>Excessive connection count (>50 concurrent)</li>
+                                <li>Communication with unknown IPs</li>
+                            </ul>
+                        </div>
+                        <div class="actions">
+                            <p class="label">Recommended Actions:</p>
+                            <div class="action-item">
+                                <span class="action-icon">🔍</span>
+                                <div class="action-content">
+                                    <p class="action-title">Analyze Network Traffic</p>
+                                    <p class="action-desc">Use Wireshark or netstat to monitor suspicious connections</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🚪</span>
+                                <div class="action-content">
+                                    <p class="action-title">Block Port Access</p>
+                                    <p class="action-desc">Configure firewall to block connections to suspicious ports</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🛡️</span>
+                                <div class="action-content">
+                                    <p class="action-title">Enable Firewall Rules</p>
+                                    <p class="action-desc">Add Windows Firewall rules to restrict outbound traffic</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">⚠️</span>
+                                <div class="action-content">
+                                    <p class="action-title">IP Blacklisting</p>
+                                    <p class="action-desc">Report malicious IPs to security authorities</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 4: Process Injection -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <span class="category-icon">💉</span>
+                        <h3>Process Injection & DLL Hijacking</h3>
+                        <span class="threat-level critical">CRITICAL</span>
+                    </div>
+                    <div class="category-content">
+                        <p class="description">Malicious code injection into processes or suspicious DLL loading</p>
+                        <div class="indicators">
+                            <p class="label">Indicators:</p>
+                            <ul>
+                                <li>Unexpected DLL files loaded (malware, exploit, inject)</li>
+                                <li>Backup DLL files (.bak extensions)</li>
+                                <li>Memory-mapped suspicious files</li>
+                                <li>Anomalous module loading patterns</li>
+                            </ul>
+                        </div>
+                        <div class="actions">
+                            <p class="label">Recommended Actions:</p>
+                            <div class="action-item">
+                                <span class="action-icon">🔎</span>
+                                <div class="action-content">
+                                    <p class="action-title">Module Analysis</p>
+                                    <p class="action-desc">Analyze loaded DLLs using Process Explorer or Dependency Walker</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🗂️</span>
+                                <div class="action-content">
+                                    <p class="action-title">File System Check</p>
+                                    <p class="action-desc">Scan for suspicious DLL files in system directories</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🧹</span>
+                                <div class="action-content">
+                                    <p class="action-title">Remove Malicious DLLs</p>
+                                    <p class="action-desc">Delete suspicious DLL files and restore from clean backups</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🔧</span>
+                                <div class="action-content">
+                                    <p class="action-title">Windows Repair</p>
+                                    <p class="action-desc">Run sfc /scannow to repair corrupted system files</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 5: File Access Anomalies -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <span class="category-icon">📁</span>
+                        <h3>Protected Directory Access</h3>
+                        <span class="threat-level high">HIGH RISK</span>
+                    </div>
+                    <div class="category-content">
+                        <p class="description">Unauthorized access to critical system directories</p>
+                        <div class="indicators">
+                            <p class="label">Indicators:</p>
+                            <ul>
+                                <li>Access to C:\Windows directory from browser</li>
+                                <li>C:\Program Files modifications</li>
+                                <li>System32 directory access</li>
+                                <li>Creation of executables in protected dirs</li>
+                            </ul>
+                        </div>
+                        <div class="actions">
+                            <p class="label">Recommended Actions:</p>
+                            <div class="action-item">
+                                <span class="action-icon">📊</span>
+                                <div class="action-content">
+                                    <p class="action-title">Audit File Access</p>
+                                    <p class="action-desc">Enable File Access Audit in Group Policy Editor for protected directories</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🔒</span>
+                                <div class="action-content">
+                                    <p class="action-title">Restrict Permissions</p>
+                                    <p class="action-desc">Modify NTFS permissions to prevent browser access to system directories</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🔍</span>
+                                <div class="action-content">
+                                    <p class="action-title">Investigate Access</p>
+                                    <p class="action-desc">Review Event Viewer for file access logs</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🗂️</span>
+                                <div class="action-content">
+                                    <p class="action-title">Restore System Files</p>
+                                    <p class="action-desc">Restore any modified system files from backup</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 6: Memory Exploits -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <span class="category-icon">💾</span>
+                        <h3>Memory Exploit Patterns</h3>
+                        <span class="threat-level high">HIGH RISK</span>
+                    </div>
+                    <div class="category-content">
+                        <p class="description">Abnormal memory usage indicating shellcode or exploit injection</p>
+                        <div class="indicators">
+                            <p class="label">Indicators:</p>
+                            <ul>
+                                <li>Virtual memory >> RSS memory (possible shellcode)</li>
+                                <li>Excessive memory per tab (>1GB suspicious)</li>
+                                <li>Abnormal memory growth patterns</li>
+                                <li>Memory allocation for crypto-mining</li>
+                            </ul>
+                        </div>
+                        <div class="actions">
+                            <p class="label">Recommended Actions:</p>
+                            <div class="action-item">
+                                <span class="action-icon">📈</span>
+                                <div class="action-content">
+                                    <p class="action-title">Monitor Memory Usage</p>
+                                    <p class="action-desc">Track memory trends in Task Manager to identify abnormal patterns</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🧹</span>
+                                <div class="action-content">
+                                    <p class="action-title">Close Heavy Tabs</p>
+                                    <p class="action-desc">Close tabs consuming excessive memory to stop exploit execution</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🛡️</span>
+                                <div class="action-content">
+                                    <p class="action-title">Update Browser</p>
+                                    <p class="action-desc">Ensure browser and plugins are fully patched against exploits</p>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <span class="action-icon">🖥️</span>
+                                <div class="action-content">
+                                    <p class="action-title">Hardware Review</p>
+                                    <p class="action-desc">Check for cryptocurrency mining hardware or CPU overheating</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Practices Section -->
+        <section class="best-practices-section">
+            <h2 class="section-title">🎯 Security Best Practices</h2>
+            <div class="practices-grid">
+                <div class="practice-card">
+                    <span class="practice-icon">🔄</span>
+                    <h4>Keep Systems Updated</h4>
+                    <p>Regularly update OS, browser, and all applications to patch vulnerabilities</p>
+                </div>
+                <div class="practice-card">
+                    <span class="practice-icon">🛡️</span>
+                    <h4>Use Security Software</h4>
+                    <p>Deploy antivirus, anti-malware, and endpoint protection solutions</p>
+                </div>
+                <div class="practice-card">
+                    <span class="practice-icon">🔑</span>
+                    <h4>Strong Credentials</h4>
+                    <p>Use complex passwords and multi-factor authentication</p>
+                </div>
+                <div class="practice-card">
+                    <span class="practice-icon">⚠️</span>
+                    <h4>Phishing Awareness</h4>
+                    <p>Be cautious with emails and links; verify before clicking</p>
+                </div>
+                <div class="practice-card">
+                    <span class="practice-icon">📊</span>
+                    <h4>Monitor Activity</h4>
+                    <p>Regularly review logs and system activity for suspicious behavior</p>
+                </div>
+                <div class="practice-card">
+                    <span class="practice-icon">💾</span>
+                    <h4>Regular Backups</h4>
+                    <p>Maintain offline backups to recover from ransomware attacks</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Reference Table -->
+        <section class="reference-section">
+            <h2 class="section-title">⚡ Quick Reference: Threat Levels & Responses</h2>
+            <div class="table-wrapper">
+                <table class="reference-table">
+                    <thead>
+                        <tr>
+                            <th>Threat Type</th>
+                            <th>Severity</th>
+                            <th>Immediate Action</th>
+                            <th>Follow-up</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Privilege Escalation</td>
+                            <td><span class="severity-critical">CRITICAL</span></td>
+                            <td>Isolate network immediately</td>
+                            <td>Full system restore from backup</td>
+                        </tr>
+                        <tr>
+                            <td>Process Injection</td>
+                            <td><span class="severity-critical">CRITICAL</span></td>
+                            <td>Terminate suspicious process</td>
+                            <td>Full antivirus scan + OS repair</td>
+                        </tr>
+                        <tr>
+                            <td>Suspicious Child Process</td>
+                            <td><span class="severity-high">HIGH</span></td>
+                            <td>Kill process immediately</td>
+                            <td>Investigate parent application</td>
+                        </tr>
+                        <tr>
+                            <td>Network Anomalies</td>
+                            <td><span class="severity-high">HIGH</span></td>
+                            <td>Block suspicious IP in firewall</td>
+                            <td>Review network connections</td>
+                        </tr>
+                        <tr>
+                            <td>Protected Dir Access</td>
+                            <td><span class="severity-high">HIGH</span></td>
+                            <td>Restrict permissions immediately</td>
+                            <td>Audit access logs</td>
+                        </tr>
+                        <tr>
+                            <td>Memory Exploit Pattern</td>
+                            <td><span class="severity-high">HIGH</span></td>
+                            <td>Close heavy tabs/restart browser</td>
+                            <td>Update browser & plugins</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="security-footer">
+        <p>🛡️ OS Lab Security Monitoring System</p>
+        <p style="font-size: 12px; margin-top: 8px; color: #94a3b8;">For detailed incident response procedures, contact your IT Security team</p>
+    </footer>
+</div>
+
+<script src="{{ url_for('static', filename='security.js') }}"></script>
+</body>
+</html>
