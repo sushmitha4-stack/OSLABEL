@@ -62,6 +62,13 @@ def index():
         initialize()
     return render_template('index.html')
 
+@app.route('/security')
+def security():
+    """Serve security anomalies page"""
+    if not initialized:
+        initialize()
+    return render_template('security.html')
+
 @app.route('/data')
 def get_data():
     """Get current process data"""

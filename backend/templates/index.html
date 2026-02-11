@@ -18,9 +18,15 @@
             <h1>🖥️ Process Monitor Dashboard</h1>
             <p class="subtitle">Real-time System Performance Tracking</p>
         </div>
-        <div class="status-indicator">
-            <div class="status-dot NORMAL" id="statusDot"></div>
-            <span id="statusText">NORMAL</span>
+        <div class="header-actions">
+            <a href="/security" class="btn-security" title="View Security Threats & Actions">
+                <span class="btn-icon">🛡️</span>
+                <span class="btn-text">Security Center</span>
+            </a>
+            <div class="status-indicator">
+                <div class="status-dot NORMAL" id="statusDot"></div>
+                <span id="statusText">NORMAL</span>
+            </div>
         </div>
     </header>
 
@@ -97,6 +103,23 @@
                 <span class="stat-value" id="updateTime">--:--:--</span>
             </div>
         </div>
+
+        <!-- Security Threats Section -->
+        <div class="security-threats-section">
+            <div class="threats-header">
+                <h3 class="threats-title">🛡️ Security Threats Detected</h3>
+                <div class="threat-severity-badge" id="threatSeverityBadge">
+                    <span id="threatCount">0</span> Active Threats
+                </div>
+            </div>
+            <div id="securityThreatsContainer" class="security-threats-container">
+                <p class="no-threats-message">✅ No security threats detected</p>
+            </div>
+            <div id="threatsList" class="threats-list" style="display: none;">
+                <div id="threatsBody"></div>
+                <a href="/security" class="btn-learn-more">📖 Learn More on Security Center →</a>
+            </div>
+        </div>
     </main>
 
     <footer class="footer">
@@ -130,6 +153,33 @@
         </div>
     </div>
 </div>
+
+<!-- Security Threats Modal -->
+<div id="securityModal" class="modal">
+    <div class="modal-content security-alert">
+        <div class="modal-header security-header">
+            <span class="alert-icon">🛡️</span>
+            <h2>SECURITY THREAT DETECTED</h2>
+        </div>
+        <div class="modal-body alert-body">
+            <p class="threat-message" id="threatMessage">Security threat identified!</p>
+            <div class="threat-details">
+                <p><strong>Threat Type:</strong> <span id="threatType">--</span></p>
+                <p><strong>Severity:</strong> <span id="threatSeverity" class="severity-badge">--</span></p>
+                <p><strong>Description:</strong> <span id="threatDescription">--</span></p>
+                <p><strong>Impact:</strong> <span id="threatImpact">--</span></p>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 10px; margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                📋 <strong>Recommended Actions:</strong> Visit the Security Center for detailed mitigation steps.
+            </div>
+        </div>
+        <div class="modal-footer alert-footer">
+            <button id="learnMoreBtn" class="btn-danger">🛡️ View Security Center</button>
+            <button id="threatDismissBtn" class="btn-secondary">⏭️ Dismiss</button>
+        </div>
+    </div>
+</div>
+
 
 <!-- Chart.js Library -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
